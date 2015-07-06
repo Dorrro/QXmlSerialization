@@ -32,6 +32,7 @@ QDomElement QXmlSerialization::CreateDomElement(const QString &name, const QVari
 
         if(variant.type() == QVariant::Hash)
         {
+            //if QVariant is QHash we can assume that it is a QVariantHash
             QDomDocument temp;
             QVariantHash variantHash = qvariant_cast<QVariantHash>(variant);
             tag = CreateDomElement(hash.keys().at(hashElementIndex), variantHash, temp);
@@ -39,6 +40,7 @@ QDomElement QXmlSerialization::CreateDomElement(const QString &name, const QVari
         }
         else if(variant.toString() != "")
         {
+            //any other option is treated as a simple string
             tag = document.createElement(hash.keys().at(hashElementIndex));
             element.appendChild(tag);
             QDomText text = document.createTextNode(variant.toString());

@@ -53,7 +53,7 @@ QDomElement QXmlSerialization::CreateDomElement(const QString &name, const QVari
 
 void QXmlSerialization::Deserialize(const QDomDocument &doc, QObject *targetObject)
 {
-    QVariantHash hash = QXmlSerialization::CreateVariantHash(doc.firstChild().toElement().childNodes());
+    QVariantHash hash = QXmlSerialization::CreateVariantHash(doc.documentElement().childNodes());
 
     QObjectHelper::QVariantHash2QObject(hash, targetObject);
 }

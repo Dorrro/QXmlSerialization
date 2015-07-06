@@ -19,7 +19,6 @@ SOURCES += \
 
 HEADERS += \
     QXmlSerialization.h \
-    qxmlserialization_global.h \
     QObjectHelper.h
 
 unix {

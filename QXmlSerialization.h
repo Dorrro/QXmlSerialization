@@ -5,9 +5,8 @@
 #include <QHash>
 
 #include "QObjectHelper.h"
-#include "qxmlserialization_global.h"
 
-class QXMLSERIALIZATIONSHARED_EXPORT QXmlSerialization
+class QXmlSerialization
 {
 public slots:
     /**

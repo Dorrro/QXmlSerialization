@@ -4,7 +4,6 @@ SOURCES += \
 
 HEADERS += \
     $$PWD/QXmlSerialization.h \
-    $$PWD/qxmlserialization_global.h \
     $$PWD/QObjectHelper.h
 	
 INCLUDEPATH += $$PWD

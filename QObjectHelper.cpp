@@ -2,9 +2,9 @@
 
 #include "QObjectHelper.h"
 
-QVariantHash QObjectHelper::QObject2QVariantHash(const QObject *object, const QStringList &ignoredProperties)
+QVariantMap QObjectHelper::QObject2QVariantMap(const QObject *object, const QStringList &ignoredProperties)
 {
-    QVariantHash result;
+    QVariantMap result;
 
     const QMetaObject *metaobject = object->metaObject();
     for (int i=0; i< metaobject->propertyCount(); ++i)
@@ -17,10 +17,11 @@ QVariantHash QObjectHelper::QObject2QVariantHash(const QObject *object, const QS
 
         QVariant value = object->property(name);
 
-        if(value.type() == QVariant::UserType)
+        QVariant::Type type = value.type();
+        if(type == QVariant::UserType)
         {
-            QObject * obj = qvariant_cast<QObject *>(value);
-            result[name] = QObject2QVariantHash(obj);
+            QObject* obj = qvariant_cast<QObject*>(value);
+            result[name] = QObject2QVariantMap(obj);
         }
         else
         {
@@ -31,13 +32,13 @@ QVariantHash QObjectHelper::QObject2QVariantHash(const QObject *object, const QS
     return result;
 }
 
-void QObjectHelper::QVariantHash2QObject(const QVariantHash &hash, QObject *object)
+void QObjectHelper::QVariantMap2QObject(const QVariantMap &map, QObject *object)
 {
     const QMetaObject *metaobject = object->metaObject();
 
-    for(int hashElementIndex = 0; hashElementIndex < hash.count(); hashElementIndex++)
+    for(int mapElementIndex = 0; mapElementIndex < map.count(); mapElementIndex++)
     {
-        int propertyIndex = metaobject->indexOfProperty(hash.keys().at(hashElementIndex).toUtf8());
+        int propertyIndex = metaobject->indexOfProperty(map.keys().at(mapElementIndex).toUtf8());
         if (propertyIndex < 0)
         {
             continue;
@@ -45,7 +46,7 @@ void QObjectHelper::QVariantHash2QObject(const QVariantHash &hash, QObject *obje
 
         QMetaProperty metaproperty = metaobject->property(propertyIndex);
         QVariant::Type type = metaproperty.type();
-        QVariant variant(hash.values().at(hashElementIndex));
+        QVariant variant(map.values().at(mapElementIndex));
         if (variant.canConvert(type))
         {
             variant.convert(type);
@@ -57,14 +58,14 @@ void QObjectHelper::QVariantHash2QObject(const QVariantHash &hash, QObject *obje
         }
         else
         {
-            //let's assume that inner object is QVariantHash - as expected
-            QVariantHash innerHash = qvariant_cast<QVariantHash>(variant);
+            //let's assume that inner object is QVariantMap - as expected
+            QVariantMap innerMap = qvariant_cast<QVariantMap>(variant);
 
             //create instance of an object based on it's registered type
             QObject* innerObject = QMetaType::metaObjectForType(metaproperty.userType())->newInstance();
 
             //recursively fill the object properties
-            QVariantHash2QObject(innerHash, innerObject);
+            QVariantMap2QObject(innerMap, innerObject);
 
             //assign object to property
             QVariant var;

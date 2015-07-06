@@ -8,20 +8,20 @@ class QObjectHelper
 {
 public:
     /**
-     * @brief QObject2QVariantHash A static method taking object and optional list of ignored properties returning QVariantHash value
+     * @brief QObject2QVariantMap A static method taking object and optional list of ignored properties returning QVariantMap value
      * @param object Object to be converted
      * @param ignoredProperties List of ignored properties' name
-     * @return Representation of QObject properties in form of QVariantHash
+     * @return Representation of QObject properties in form of QVariantMap
      */
-    static QVariantHash QObject2QVariantHash(const QObject* object,
+    static QVariantMap QObject2QVariantMap(const QObject* object,
                                                       const QStringList& ignoredProperties = QStringList(QString(QLatin1String("objectName"))));
 
     /**
-     * @brief QVariantHash2QObject A static method taking QVariantHash and pointer to QObject which causes to fill QObject properties to be filled according to QVariantHash members
-     * @param hash Representation of QObject properties in form of QVariantHash
-     * @param object Object which properties would be filled according to hash members
+     * @brief QVariantMap2QObject A static method taking QVariantMap and pointer to QObject which causes to fill QObject properties to be filled according to QVariantMap members
+     * @param map Representation of QObject properties in form of QVariantMap
+     * @param object Object which properties would be filled according to map members
      */
-    static void QVariantHash2QObject(const QVariantHash& hash, QObject *object);
+    static void QVariantMap2QObject(const QVariantMap& map, QObject *object);
 };
 
 #endif // QOBJECTHELPER_H

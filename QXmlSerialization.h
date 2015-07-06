@@ -2,7 +2,7 @@
 #define QXMLSERIALIZATION_H
 
 #include <QDomDocument>
-#include <QHash>
+#include <QMap>
 
 #include "QObjectHelper.h"
 
@@ -25,20 +25,22 @@ public slots:
 
 private slots:
     /**
-     * @brief CreateVariantHash Converts given QDomNodeList to QVariantHash representation
+     * @brief CreateVariantMap Converts given QDomNodeList to QVariantMap representation
      * @param document Basically, inner child list of a root tag
-     * @return Converted \p document in form of QVariantHash
+     * @return Converted \p document in form of QVariantMap
      */
-    static QVariantHash CreateVariantHash(const QDomNodeList& document);
+    static QVariantMap CreateVariantMap(const QDomNodeList& document);
 
     /**
-     * @brief CreateDomElement Creates a node element with name \p name in \p document according to \p hash members
+     * @brief CreateDomElement Creates a node element with name \p name in \p document according to \p map members
      * @param name Name of root element of given \p document
-     * @param hash Would be treated as a map for filling the \p document
-     * @param document QDomDocument which would be will according to \p hash members
+     * @param map Would be treated as a map for filling the \p document
+     * @param document QDomDocument which would be will according to \p map members
      * @return Root element of a \p document
      */
-    static QDomElement CreateDomElement(const QString &name, const QVariantHash &hash, QDomDocument &document);
+    static QDomElement CreateDomElement(const QString &name, const QVariantMap &map, QDomDocument &document);
+
+    static QDomElement CreateDomElement(const QString &name, const QVariantList &list, QDomDocument &document);
 };
 
 #endif // QXMLSERIALIZATION_H

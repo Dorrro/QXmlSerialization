@@ -2,7 +2,7 @@
 
 QDomDocument QXmlSerialization::Serialize(QObject *objectToSerialize)
 {
-    QVariantHash hash = QObjectHelper::QObject2QVariantHash(objectToSerialize);
+    QVariantMap map = QObjectHelper::QObject2QVariantMap(objectToSerialize);
 
     QDomDocument doc;
 
@@ -13,7 +13,7 @@ QDomDocument QXmlSerialization::Serialize(QObject *objectToSerialize)
     //filling root tag element
     QDomElement root = QXmlSerialization::CreateDomElement(
                 objectToSerialize->metaObject()->className(),
-                hash,
+                map,
                 doc);
 
     doc.appendChild(root);
@@ -21,27 +21,34 @@ QDomDocument QXmlSerialization::Serialize(QObject *objectToSerialize)
     return doc;
 }
 
-QDomElement QXmlSerialization::CreateDomElement(const QString &name, const QVariantHash &hash, QDomDocument &document)
+QDomElement QXmlSerialization::CreateDomElement(const QString &name, const QVariantMap &map, QDomDocument &document)
 {
     QDomElement element = document.createElement(name);
 
-    for(int hashElementIndex = 0; hashElementIndex < hash.count(); hashElementIndex++)
+    for(int mapElementIndex = 0; mapElementIndex < map.count(); mapElementIndex++)
     {
         QDomElement tag;
-        QVariant variant = hash.values().at(hashElementIndex);
+        QVariant variant = map.values().at(mapElementIndex);
 
-        if(variant.type() == QVariant::Hash)
+        if(variant.type() == QVariant::Map)
         {
-            //if QVariant is QHash we can assume that it is a QVariantHash
+            //if QVariant is QMap we can assume that it is a QVariantMap
             QDomDocument temp;
-            QVariantHash variantHash = qvariant_cast<QVariantHash>(variant);
-            tag = CreateDomElement(hash.keys().at(hashElementIndex), variantHash, temp);
+            QVariantMap variantMap = qvariant_cast<QVariantMap>(variant);
+            tag = CreateDomElement(map.keys().at(mapElementIndex), variantMap, temp);
+            element.appendChild(tag);
+        }
+        else if(variant.type() == QVariant::List)
+        {
+            QDomDocument temp;
+            QVariantList variantList = qvariant_cast<QVariantList>(variant);
+            tag = CreateDomElement(map.keys().at(mapElementIndex), variantList, temp);
             element.appendChild(tag);
         }
         else if(variant.toString() != "")
         {
             //any other option is treated as a simple string
-            tag = document.createElement(hash.keys().at(hashElementIndex));
+            tag = document.createElement(map.keys().at(mapElementIndex));
             element.appendChild(tag);
             QDomText text = document.createTextNode(variant.toString());
             tag.appendChild(text);
@@ -51,17 +58,64 @@ QDomElement QXmlSerialization::CreateDomElement(const QString &name, const QVari
     return element;
 }
 
-void QXmlSerialization::Deserialize(const QDomDocument &doc, QObject *targetObject)
+QDomElement QXmlSerialization::CreateDomElement(const QString &name, const QVariantList &list, QDomDocument &document)
 {
-    QVariantHash hash = QXmlSerialization::CreateVariantHash(doc.documentElement().childNodes());
-
-    QObjectHelper::QVariantHash2QObject(hash, targetObject);
+    QDomElement element = document.createElement(name);
+    foreach(QVariant variant, list)
+    {
+        QDomElement tag;
+        switch(variant.type())
+        {
+            case QVariant::String:
+            {
+                tag = document.createElement("string");
+                element.appendChild(tag);
+                QDomText text = document.createTextNode(variant.toString());
+                tag.appendChild(text);
+            }
+            break;
+            case QVariant::Map:
+            {
+                QDomDocument temp;
+                QVariantMap variantMap = qvariant_cast<QVariantMap>(variant);
+                tag = CreateDomElement("Hash", variantMap, temp);
+                element.appendChild(tag);
+            }
+            break;
+            case QVariant::List:
+            {
+                QDomDocument temp;
+                QVariantList variantList = qvariant_cast<QVariantList>(variant);
+                tag = CreateDomElement("Array", variantList, temp);
+                element.appendChild(tag);
+            }
+            break;
+            case QVariant::UserType:
+            {
+                QDomDocument temp;
+                QObject* obj = qvariant_cast<QObject*>(variant);
+                QVariantMap variantMap = QObjectHelper::QObject2QVariantMap(obj);
+                tag = CreateDomElement(obj->metaObject()->className(), variantMap, temp);
+                element.appendChild(tag);
+            }
+            break;
+            //TODO: QVariant::Hash -> convert QHash to QMap - it's that simple
+        }
+    }
+    return element;
 }
 
-QVariantHash QXmlSerialization::CreateVariantHash(const QDomNodeList &childNodes)
+void QXmlSerialization::Deserialize(const QDomDocument &doc, QObject *targetObject)
+{
+    QVariantMap map = QXmlSerialization::CreateVariantMap(doc.documentElement().childNodes());
+
+    QObjectHelper::QVariantMap2QObject(map, targetObject);
+}
+
+QVariantMap QXmlSerialization::CreateVariantMap(const QDomNodeList &childNodes)
 {
     QDomNodeList rootChildNodes = childNodes;
-    QVariantHash hash;
+    QVariantMap map;
     for(int childIndex = 0; childIndex < rootChildNodes.count(); childIndex++)
     {
         QDomElement childElement = rootChildNodes.at(childIndex).toElement();
@@ -69,13 +123,13 @@ QVariantHash QXmlSerialization::CreateVariantHash(const QDomNodeList &childNodes
 
         if(innerChildNodeName == "")
         {
-            hash[childElement.tagName()] = childElement.text();
+            map[childElement.tagName()] = childElement.text();
         }
         else
         {
-            hash[childElement.tagName()] = CreateVariantHash(rootChildNodes.at(childIndex).childNodes());
+            map[childElement.tagName()] = CreateVariantMap(rootChildNodes.at(childIndex).childNodes());
         }
     }
 
-    return hash;
+    return map;
 }

@@ -66,14 +66,6 @@ QDomElement QXmlSerialization::CreateDomElement(const QString &name, const QVari
         QDomElement tag;
         switch(variant.type())
         {
-            case QVariant::String:
-            {
-                tag = document.createElement("string");
-                element.appendChild(tag);
-                QDomText text = document.createTextNode(variant.toString());
-                tag.appendChild(text);
-            }
-            break;
             case QVariant::Map:
             {
                 QDomDocument temp;
@@ -99,6 +91,19 @@ QDomElement QXmlSerialization::CreateDomElement(const QString &name, const QVari
                 element.appendChild(tag);
             }
             break;
+            default:
+            {
+                case QVariant::String:
+                {
+                    QString tagName = variant.typeName();
+                    tagName = tagName.replace("Q", "").toLower();
+                    tag = document.createElement(tagName);
+                    element.appendChild(tag);
+                    QDomText text = document.createTextNode(variant.toString());
+                    tag.appendChild(text);
+                }
+            }
+            break;
             //TODO: QVariant::Hash -> convert QHash to QMap - it's that simple
         }
     }
@@ -107,29 +112,77 @@ QDomElement QXmlSerialization::CreateDomElement(const QString &name, const QVari
 
 void QXmlSerialization::Deserialize(const QDomDocument &doc, QObject *targetObject)
 {
-    QVariantMap map = QXmlSerialization::CreateVariantMap(doc.documentElement().childNodes());
-
-    QObjectHelper::QVariantMap2QObject(map, targetObject);
+    const QMetaObject *metaobject = targetObject->metaObject();
+    QDomNodeList rootChildNodes = doc.documentElement().childNodes();
+    FillObjectPropertiesBasedOnXMLNodeList(rootChildNodes, targetObject);
 }
 
-QVariantMap QXmlSerialization::CreateVariantMap(const QDomNodeList &childNodes)
+void QXmlSerialization::FillObjectPropertiesBasedOnXMLNodeList(const QDomNodeList &list, QObject* object)
 {
-    QDomNodeList rootChildNodes = childNodes;
-    QVariantMap map;
-    for(int childIndex = 0; childIndex < rootChildNodes.count(); childIndex++)
-    {
-        QDomElement childElement = rootChildNodes.at(childIndex).toElement();
-        QString innerChildNodeName = rootChildNodes.at(childIndex).childNodes().at(0).toElement().tagName();
+    const QMetaObject* metaObject = object->metaObject();
 
-        if(innerChildNodeName == "")
+    for(int childIndex = 0; childIndex < list.count(); childIndex++)
+    {
+        QDomNode rootChildNode = list.at(childIndex);
+        QDomElement rootChildElement = rootChildNode.toElement();
+        QMetaProperty rootProperty = metaObject->property(metaObject->indexOfProperty(rootChildNode.nodeName().toUtf8()));
+
+        QString content = rootChildElement.text();
+        QVariant::Type type = rootProperty.type();
+        QVariant result;
+        switch (type)
         {
-            map[childElement.tagName()] = childElement.text();
+                case QVariant::UserType:
+                {
+                    //create instance of an object based on it's registered type
+                    QObject* innerObject = QMetaType::metaObjectForType(rootProperty.type())->newInstance();
+
+                    FillObjectPropertiesBasedOnXMLNodeList(rootChildNode.childNodes(), innerObject);
+                    result.setValue(innerObject);
+                }
+                break;
+                case QVariant::List:
+                {
+                    result.setValue(QDomNodeList2QVariantList(rootChildElement.childNodes()));
+                }
+                break;
+                case QVariant::Hash:
+                case QVariant::Map:
+                qDebug("unhandled type");
+                break;
+                case QVariant::String:
+                default:
+                {
+                    result.setValue(content);
+                }
+                break;
+        }
+        rootProperty.write(object, result);
+    }
+}
+
+QVariantList QXmlSerialization::QDomNodeList2QVariantList(const QDomNodeList &list)
+{
+    QVariantList variantList;
+    for(int innerChildIndex = 0; innerChildIndex < list.count(); innerChildIndex++)
+    {
+        QDomNode innerChildNode = list.at(innerChildIndex);
+        int listElementType = QMetaType::type(innerChildNode.nodeName().toUtf8().append("*"));
+        if(listElementType > 0)
+        {
+            QObject* innerObject = QMetaType::metaObjectForType(listElementType)->newInstance();
+
+            FillObjectPropertiesBasedOnXMLNodeList(innerChildNode.childNodes(), innerObject);
+
+            QVariant var;
+            var.setValue(innerObject);
+            variantList << var;
         }
         else
         {
-            map[childElement.tagName()] = CreateVariantMap(rootChildNodes.at(childIndex).childNodes());
+            variantList << innerChildNode.toElement().text();
         }
     }
 
-    return map;
+    return variantList;
 }

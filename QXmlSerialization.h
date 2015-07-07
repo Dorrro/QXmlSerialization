@@ -3,6 +3,7 @@
 
 #include <QDomDocument>
 #include <QMap>
+#include <QString>
 
 #include "QObjectHelper.h"
 
@@ -25,22 +26,35 @@ public slots:
 
 private slots:
     /**
-     * @brief CreateVariantMap Converts given QDomNodeList to QVariantMap representation
-     * @param document Basically, inner child list of a root tag
-     * @return Converted \p document in form of QVariantMap
-     */
-    static QVariantMap CreateVariantMap(const QDomNodeList& document);
-
-    /**
      * @brief CreateDomElement Creates a node element with name \p name in \p document according to \p map members
      * @param name Name of root element of given \p document
      * @param map Would be treated as a map for filling the \p document
-     * @param document QDomDocument which would be will according to \p map members
+     * @param document QDomDocument which would be will according to the \p map members
      * @return Root element of a \p document
      */
     static QDomElement CreateDomElement(const QString &name, const QVariantMap &map, QDomDocument &document);
 
+    /**
+     * @brief CreateDomElement Creates a node element with name \p name in \p document according to \p list members
+     * @param name Name of root element of given \p document
+     * @param list Would be treated as a map for filling the \p document
+     * @param document QDomDocument which would be will according to the \p list members
+     * @return Root element of a \p document
+     */
     static QDomElement CreateDomElement(const QString &name, const QVariantList &list, QDomDocument &document);
+
+    /**
+     * @brief FillObjectPropertiesBasedOnXMLNodeList Converts given QDomNodeList to QObject representation
+     * @param list Basically, inner child list of a root tag
+     */
+    static void FillObjectPropertiesBasedOnXMLNodeList(const QDomNodeList& list, QObject* object);
+
+    /**
+     * @brief QDomNodeList2QVariantList Converts given QDomNodeList to QVariantList representation
+     * @param list Basically, inner child list of a root tag
+     * @return Converted \p list in form of QVariantList
+     */
+    static QVariantList QDomNodeList2QVariantList(const QDomNodeList& list);
 };
 
 #endif // QXMLSERIALIZATION_H

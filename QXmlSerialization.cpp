@@ -137,7 +137,11 @@ void QXmlSerialization::FillObjectPropertiesBasedOnXMLNodeList(const QDomNodeLis
                 {
                     //create instance of an object based on it's registered type
                     int listElementType = QMetaType::type(rootPropertyName.toUtf8());
-                    QObject* innerObject = QMetaType::metaObjectForType(listElementType)->newInstance();
+                    #if defined(Q_OS_WIN)
+                        QObject* innerObject = QMetaType::metaObjectForType(rootProperty.type())->newInstance();
+                    #else
+                        QObject* innerObject = QMetaType::metaObjectForType(listElementType)->newInstance();
+                    #endif
 
                     FillObjectPropertiesBasedOnXMLNodeList(rootChildNode.childNodes(), innerObject);
                     result.setValue(innerObject);

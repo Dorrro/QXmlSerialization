@@ -127,6 +127,7 @@ void QXmlSerialization::FillObjectPropertiesBasedOnXMLNodeList(const QDomNodeLis
         QDomElement rootChildElement = rootChildNode.toElement();
         QMetaProperty rootProperty = metaObject->property(metaObject->indexOfProperty(rootChildNode.nodeName().toUtf8()));
 
+        QString rootPropertyName = rootProperty.typeName();
         QString content = rootChildElement.text();
         QVariant::Type type = rootProperty.type();
         QVariant result;
@@ -135,7 +136,8 @@ void QXmlSerialization::FillObjectPropertiesBasedOnXMLNodeList(const QDomNodeLis
                 case QVariant::UserType:
                 {
                     //create instance of an object based on it's registered type
-                    QObject* innerObject = QMetaType::metaObjectForType(rootProperty.type())->newInstance();
+                    int listElementType = QMetaType::type(rootPropertyName.toUtf8());
+                    QObject* innerObject = QMetaType::metaObjectForType(listElementType)->newInstance();
 
                     FillObjectPropertiesBasedOnXMLNodeList(rootChildNode.childNodes(), innerObject);
                     result.setValue(innerObject);
@@ -176,7 +178,9 @@ QVariantList QXmlSerialization::QDomNodeList2QVariantList(const QDomNodeList &li
 
             QVariant var;
             var.setValue(innerObject);
-            variantList << var;
+            int i = var.type();
+            var.convert(listElementType);
+            variantList << QVariant::fromValue(innerObject);
         }
         else
         {
